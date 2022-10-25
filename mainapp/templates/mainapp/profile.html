@@ -1,0 +1,366 @@
+{% extends "mainapp/loggedinbase.html" %}
+
+{% load static %}
+
+{% block content %}
+<div id="app">
+	{% csrf_token %}
+	<p></p>
+
+	<link rel="stylesheet" href="{% static 'mainapp/profile.css' %}">
+
+	<div class="card" style="width: 28rem;">
+	  <img class="card-img-top" :src="user.imgurl">
+	  <div class="card-body">
+	    <p class="card-text">To change profile picture, choose file and then click change</p>
+		<input type="file" accept="image/png, image/jpeg" id="pp">
+		<button @click="changeProfilePic()">change</button>
+	  </div>
+	  <hr>
+	  <div class="card-body2">
+	    <p class="card-text">[[ user.email ]]</p>
+	    <input type="email" id="email">
+	    <button @click="changeUserDetail('email')">change</button>
+	  </div>
+	  <div class="card-body2">
+	    <p class="card-text">[[ user.city ]]</p>
+		<input type="text" id="city">
+		<button @click="changeUserDetail('city')">change</button>
+	  </div>
+	  <div class="card-body3">
+	    <p class="card-text">[[ user.dob ]]</p>
+		<input type="date" id="dob">
+		<button @click="changeUserDetail('dob')">change</button>
+	  </div>
+	</div>
+	
+
+
+
+	<p></p>
+	<p></p>
+
+	<h2>Your hobbies</h2>
+	<table class="table table-bordered">
+		<thead class="thead-light">
+			<tr>
+				<th scope="col">Hobby Name</th>
+				<th scope="col">Hobby Description</th>
+				<th scope="col">remove</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr v-for="hobby in userhobbies">
+				<td>[[ hobby.name ]]</td>
+				<td>[[ hobby.description ]]</td>
+				<td><button type="button" class="btn-close" aria-label="Close" @click="removeUserHobby(hobby.id)"></button></td>
+			</tr>
+
+		</tbody>	
+	</table>	
+
+	<p></p>
+	<p></p>
+	<hr>
+
+	<h2>All hobbies</h2>
+	<table class="table table-bordered">
+		<thead>
+			<tr>
+				<th scope="col">Hobby Name</th>
+				<th scope="col">Hobby Description</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr v-for="hobby in hobbies">
+				<td>[[ hobby.name ]]</td>
+				<td>[[ hobby.description ]]</td>
+				<td><button @click="addHobbyUser(hobby.id)">add to your hobbies</button></td>
+			</tr>
+
+		</tbody>	
+	</table>
+	<hr>
+
+
+
+	<div class="hobbyattributes">
+		<input type="text" id="hobbyname" placeholder="name">
+		<input type="text" id="hobbydescription" placeholder="description">
+		<button @click="addNewHobby()">add new hobby</button><span>(Enter hobby name, hobby description and click add new hobby to create a new hobby)</span>
+	</div>
+	<p></p>
+	<p></p>
+
+	<h2>Friend Requests</h2>
+	<table class="table table-bordered">
+		<thead>
+			<tr>
+				<th scope="col">username</th>
+				<th scope="col"></th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr v-for="username in reqs">
+				<td>[[ username ]]</td>
+				<td><button type="button" class="btn btn-success" @click="respond_req(username, 'accept')">Accept</button></td>
+				<td><button type="button" class="btn btn-danger" @click="respond_req(username, 'decline')">Decline</button></td>
+			</tr>
+		</tbody>	
+	</table>
+
+	<p></p>
+	<p></p>
+	<hr>
+
+	<h2>Friends</h2>
+	<table class="table table-bordered">
+		<thead>
+			<tr>
+				<th scope="col">Friend Username</th>
+				
+			</tr>
+		</thead>
+		<tbody>
+			<tr v-for="friend in friends">
+				<td>[[ friend ]]</td>
+			</tr>
+
+		</tbody>	
+	</table>
+	<hr>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+	let myApp = Vue.createApp({
+		delimiters: ["[[", "]]"],
+		data() {
+			return {
+				user : {},
+				userhobbies : {},
+				hobbies : {},
+				reqs :[],
+				friends: [],
+			}
+		},
+		async created() {
+            let response = await fetch("{%url 'get_user_data'%}", {
+            	method: "GET",
+            	
+            });
+            if (response.ok){
+                let data = await response.json();
+                this.user = data;
+            
+            };
+            let response2 = await fetch("{%url 'get_user_hobbies'%}",{
+            	method :"GET",
+            	headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+            });
+            if (response2.ok){
+            	let data2 = await response2.json()
+            	this.userhobbies = data2.hobbies;
+
+            };
+            let response3 = await fetch("{%url 'get_all_hobbies'%}",{
+            	method :"GET",
+            	headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+            });
+            if (response3.ok){
+            	let data3 = await response3.json()
+            	this.hobbies = data3.hobbies;
+
+            };
+            let response4 = await fetch("{%url 'get_reqs'%}",{
+            	method :"GET",
+            	headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+            });
+            if (response4.ok){
+            	let data4 = await response4.json()
+            	this.reqs = data4.reqs;
+
+            };
+			let response5 = await fetch("{% url 'get_friends' %}",{
+				method: "GET",
+				headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+			});
+			if (response5.ok){
+				let data5 = await response5.json();
+				this.friends = data5.friends;
+			}
+
+     
+		},
+
+		methods: {
+			async refreshFriends(){
+				let response5 = await fetch("{% url 'get_friends' %}",{
+					method: "GET",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+				});
+				if (response5.ok){
+					let data5 = await response5.json();
+					this.friends = data5.friends;
+				}
+			},
+
+
+			async refreshReqs(){
+	            let response4 = await fetch("{%url 'get_reqs'%}",{
+	            	method :"GET",
+	            	headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+	            });
+	            if (response4.ok){
+	            	let data4 = await response4.json()
+	            	this.reqs = data4.reqs;	
+				}
+			},
+
+
+
+			async removeUserHobby(hobbyid){
+				let response = await fetch("{% url 'remove_user_hobby' %}",{
+					method:"DELETE",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+					body: JSON.stringify({
+						"id":hobbyid,
+					})
+
+
+				});
+				if (response.ok){
+					this.refreshUserHobbies();
+				}
+
+			},
+
+
+
+			async respond_req(username, choice){
+				let response = await fetch("{% url 'respond_req' %}",{
+					method:"DELETE",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+					body: JSON.stringify({
+						"choice":choice,
+						"sender":username
+					})
+
+
+				});
+				if (response.ok){
+					this.refreshReqs();
+					this.refreshFriends();
+				}				
+
+
+			},
+
+			async refreshHobbies(){
+	            let response3 = await fetch("{%url 'get_all_hobbies'%}",{
+	            	method :"GET",
+	            	headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+	            });
+	            if (response3.ok){
+	            	let data3 = await response3.json()
+	            	this.hobbies = data3.hobbies;
+
+	            };
+			},
+
+			async refreshUserHobbies(){
+	            let response3 = await fetch("{%url 'get_user_hobbies'%}",{
+	            	method :"GET",
+	            	headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+	            });
+	            if (response3.ok){
+	            	let data3 = await response3.json()
+	            	this.userhobbies = data3.hobbies;
+
+	            };
+			},
+
+			async addNewHobby(){
+				let name = document.querySelector("#hobbyname").value
+				let description = document.querySelector("#hobbydescription").value
+				let response = await fetch("{% url 'create_new_hobby' %}",{
+					method:"POST",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+					body: JSON.stringify({
+						"name":name,
+						"description":description
+					})
+
+				});
+				if (response.ok){
+					this.refreshHobbies();
+				}
+
+
+
+
+			},
+			async addHobbyUser(id){
+				let response = await fetch("{%url 'add_hobby_user'%}",{
+					method: "PUT",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+					body: JSON.stringify({"id": id}),
+				});
+				if (response.ok){
+					this.refreshUserHobbies();
+				}
+
+			},
+
+			async changeProfilePic(){
+				let input = document.querySelector("#pp");
+				let data = new FormData()
+				data.append("file", input.files[0])
+				let response = await fetch("{%url 'update_user_image'%}",{
+					method: "POST",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+					body: data
+				});
+				if (response.ok){
+					await response.json();
+					this.refreshUser();
+
+				}
+			},
+			async changeUserDetail(what){
+				let input = document.querySelector(`#${what}`).value;
+				let response = await fetch("{% url 'update_user_details' %}",{
+					method: "PUT",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+					body: JSON.stringify({"field" : what, "new" : input}),
+				});
+				if (response.ok){
+					this.user[what] = input;
+				}
+
+
+
+			},
+			async refreshUser(){
+	            let response = await fetch("{%url 'get_user_data'%}", {
+	            	method: "GET",
+	            	
+	            });
+	            if (response.ok){
+	                let data = await response.json();
+	                this.user = data;
+	            
+	            };
+
+			}
+
+		}
+
+	})
+	myApp.mount("#app")
+
+</script>
+{%endblock%}

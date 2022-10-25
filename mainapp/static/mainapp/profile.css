@@ -1,0 +1,33 @@
+body{
+    background-color: Linen;
+}
+
+.card{
+    position: relative;
+    left: 30%;
+    margin-top: 5%;
+    
+}
+
+.card-body2{
+    text-align: center;
+    padding-top: 2%;
+}
+
+.card-body3{
+    text-align: center;
+    padding-bottom: 5%;
+}
+
+h2 {
+    margin-top: 5%;
+    margin-bottom: 2%;
+}
+
+span{
+    padding-left: 5%;
+}
+
+.hobbyattributes{
+    padding-top: 1%;
+}

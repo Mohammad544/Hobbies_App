@@ -1,0 +1,161 @@
+{% extends "mainapp/loggedinbase.html" %}
+
+{% load static %}
+
+{% block content %}
+<div id="app">
+	{% csrf_token %}
+	<p></p>
+
+	<link rel="stylesheet" href="{% static 'mainapp/related_hobbies.css' %}">
+
+	<div class="firstrow">
+		<input type="text"  placeholder="filter by city" id="cityinput">
+		<input type="number" placeholder="min age" id="minage">
+		<input type="number" placeholder="max age" id="maxage">
+		<button id="btn1" type="button" class="btn btn-primary" @click="filterUsers()">Filter</button>
+		<button id="btn2" type="button" class="btn btn-primary" @click="refreshUsers()">Reset</button><span>(reset to filter again)</span>
+	</div>
+	<table class="table">
+		<thead class="thead-dark">
+			<tr>
+				<th scope="col">username</th>
+				<th scope="col">hobbies in common</th>
+				<th scope="col">age</th>
+				<th scope="col">city</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr v-for="(attrs, name) in users">
+				<td>[[ name ]]</td>
+				<td>[[ attrs.inCommon ]]</td>
+				<td>[[ attrs.age ]]</td>
+				<td>[[ attrs.city ]]</td>
+				<td v-if="!friends.includes(name)"><button @click="send_req(name)">add friend</button></td>
+				<td v-else>Already friends</td>
+			</tr>
+
+		</tbody>	
+	</table>
+
+
+
+
+
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	let myApp = Vue.createApp({
+		delimiters: ["[[", "]]"],
+		data() {
+			return {
+				users: [],
+				friends: [],
+			}
+		},
+
+		async created(){
+			let response = await fetch("{% url 'other_user_hobbies' %}",{
+				method: "GET",
+			
+			});
+			if (response.ok){
+				let data = await response.json();
+				this.users = data
+			}
+			else {
+				alert("Failed to get other users");
+			}
+			let response2 = await fetch("{% url 'get_friends' %}",{
+				method: "GET",
+				
+			});
+			if (response2.ok){
+				let data2 = await response2.json();
+				this.friends = data2.friends;
+			}
+
+
+		},
+		methods :{
+			async filterUsers(){
+				let min = null
+				let city = null
+				let max = null
+				if (document.querySelector("#minage").value != null){
+					min = document.querySelector("#minage").value
+				};
+				if (document.querySelector("#maxage").value != null){
+					 max = document.querySelector("#maxage").value
+				};
+				if (document.querySelector("#cityinput").value != null){
+					city = document.querySelector("#cityinput").value
+				};
+
+				let response = await fetch("{% url 'filter_users' %}",{
+					method: "POST",
+					body: JSON.stringify({
+						"min":min,
+						"max":max,
+						"city":city,
+						"data": this.users,
+					}),
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+				
+				});
+				if (response.ok){
+					let data = await response.json();
+					this.users = data
+				}
+
+
+
+
+			},
+
+
+			async send_req(name){
+				
+				let response = await fetch("{% url 'send_req' %}",{
+					method:"POST",
+					headers: {"X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken").value,},
+					body: JSON.stringify({
+						"username":name,
+					})
+
+				});
+				if (response.ok){
+					alert("sent");
+				}		
+			},
+			async refreshUsers(){
+				let response = await fetch("{% url 'other_user_hobbies' %}",{
+					method: "GET",
+				
+				});
+				if (response.ok){
+					let data = await response.json();
+					this.users = data
+				}
+				else {
+					alert("Failed to get other users");
+				}
+
+			}
+
+
+		}
+
+
+
+	})
+	myApp.mount('#app')
+</script>
+{% endblock %}
+
+
+
+
